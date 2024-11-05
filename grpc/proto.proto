@@ -4,7 +4,7 @@ option go_package = "DSYSHandin4-Consensus/grpc/proto";
 
 
 service HomeworkFourService{
-    rpc SendTokenToNextCLient(stream TokenSend) returns (Empty){};
+    rpc SendTokenToNextCLient(TokenSendRequest) returns (TokenSendResponse){};
     //rpc SendToken(TokenSend) returns (Empty){};
 }
 
@@ -12,9 +12,12 @@ service HomeworkFourService{
     string message = 1;
 }*/
 
-message Empty{};
+message TokenSendResponse{
+    bool success = 1;
+};
 
-message TokenSend{
+message TokenSendRequest{
     string message = 1; //maybe not relevant, keeping for debugging
     int32 token = 2;
+    int32 senderID = 3;
 }
