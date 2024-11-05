@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "DSYSHandin4-Consensus/grpc/proto";
+
+
+service HomeworkFourService{
+    rpc SendTokenToNextCLient(stream TokenSend) returns (Empty){};
+    //rpc SendToken(TokenSend) returns (Empty){};
+}
+
+/*message ConnectRequest{
+    string message = 1;
+}*/
+
+message Empty{};
+
+message TokenSend{
+    string message = 1; //maybe not relevant, keeping for debugging
+    int32 token = 2;
+}
