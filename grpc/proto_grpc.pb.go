@@ -18,7 +18,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HomeworkFourServiceClient interface {
-	SendTokenToNextCLient(ctx context.Context, in *TokenSendRequest, opts ...grpc.CallOption) (*TokenSendResponse, error)
+	SendTokenToNextCLient(ctx context.Context, opts ...grpc.CallOption) (HomeworkFourService_SendTokenToNextCLientClient, error)
+	//maybe add a function to request a token from the previous node
+	ReciveTokenFromPrevClient(ctx context.Context, opts ...grpc.CallOption) (HomeworkFourService_ReciveTokenFromPrevClientClient, error)
 }
 
 type homeworkFourServiceClient struct {
@@ -29,20 +31,81 @@ func NewHomeworkFourServiceClient(cc grpc.ClientConnInterface) HomeworkFourServi
 	return &homeworkFourServiceClient{cc}
 }
 
-func (c *homeworkFourServiceClient) SendTokenToNextCLient(ctx context.Context, in *TokenSendRequest, opts ...grpc.CallOption) (*TokenSendResponse, error) {
-	out := new(TokenSendResponse)
-	err := c.cc.Invoke(ctx, "/HomeworkFourService/SendTokenToNextCLient", in, out, opts...)
+func (c *homeworkFourServiceClient) SendTokenToNextCLient(ctx context.Context, opts ...grpc.CallOption) (HomeworkFourService_SendTokenToNextCLientClient, error) {
+	stream, err := c.cc.NewStream(ctx, &HomeworkFourService_ServiceDesc.Streams[0], "/HomeworkFourService/SendTokenToNextCLient", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &homeworkFourServiceSendTokenToNextCLientClient{stream}
+	return x, nil
+}
+
+type HomeworkFourService_SendTokenToNextCLientClient interface {
+	Send(*TokenSendRequest) error
+	CloseAndRecv() (*TokenSendResponse, error)
+	grpc.ClientStream
+}
+
+type homeworkFourServiceSendTokenToNextCLientClient struct {
+	grpc.ClientStream
+}
+
+func (x *homeworkFourServiceSendTokenToNextCLientClient) Send(m *TokenSendRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *homeworkFourServiceSendTokenToNextCLientClient) CloseAndRecv() (*TokenSendResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(TokenSendResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *homeworkFourServiceClient) ReciveTokenFromPrevClient(ctx context.Context, opts ...grpc.CallOption) (HomeworkFourService_ReciveTokenFromPrevClientClient, error) {
+	stream, err := c.cc.NewStream(ctx, &HomeworkFourService_ServiceDesc.Streams[1], "/HomeworkFourService/ReciveTokenFromPrevClient", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &homeworkFourServiceReciveTokenFromPrevClientClient{stream}
+	return x, nil
+}
+
+type HomeworkFourService_ReciveTokenFromPrevClientClient interface {
+	Send(*TokenSendRequest) error
+	CloseAndRecv() (*TokenSendResponse, error)
+	grpc.ClientStream
+}
+
+type homeworkFourServiceReciveTokenFromPrevClientClient struct {
+	grpc.ClientStream
+}
+
+func (x *homeworkFourServiceReciveTokenFromPrevClientClient) Send(m *TokenSendRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *homeworkFourServiceReciveTokenFromPrevClientClient) CloseAndRecv() (*TokenSendResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(TokenSendResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // HomeworkFourServiceServer is the server API for HomeworkFourService service.
 // All implementations must embed UnimplementedHomeworkFourServiceServer
 // for forward compatibility
 type HomeworkFourServiceServer interface {
-	SendTokenToNextCLient(context.Context, *TokenSendRequest) (*TokenSendResponse, error)
+	SendTokenToNextCLient(HomeworkFourService_SendTokenToNextCLientServer) error
+	//maybe add a function to request a token from the previous node
+	ReciveTokenFromPrevClient(HomeworkFourService_ReciveTokenFromPrevClientServer) error
 	mustEmbedUnimplementedHomeworkFourServiceServer()
 }
 
@@ -50,8 +113,11 @@ type HomeworkFourServiceServer interface {
 type UnimplementedHomeworkFourServiceServer struct {
 }
 
-func (UnimplementedHomeworkFourServiceServer) SendTokenToNextCLient(context.Context, *TokenSendRequest) (*TokenSendResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendTokenToNextCLient not implemented")
+func (UnimplementedHomeworkFourServiceServer) SendTokenToNextCLient(HomeworkFourService_SendTokenToNextCLientServer) error {
+	return status.Errorf(codes.Unimplemented, "method SendTokenToNextCLient not implemented")
+}
+func (UnimplementedHomeworkFourServiceServer) ReciveTokenFromPrevClient(HomeworkFourService_ReciveTokenFromPrevClientServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReciveTokenFromPrevClient not implemented")
 }
 func (UnimplementedHomeworkFourServiceServer) mustEmbedUnimplementedHomeworkFourServiceServer() {}
 
@@ -66,22 +132,56 @@ func RegisterHomeworkFourServiceServer(s grpc.ServiceRegistrar, srv HomeworkFour
 	s.RegisterService(&HomeworkFourService_ServiceDesc, srv)
 }
 
-func _HomeworkFourService_SendTokenToNextCLient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TokenSendRequest)
-	if err := dec(in); err != nil {
+func _HomeworkFourService_SendTokenToNextCLient_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(HomeworkFourServiceServer).SendTokenToNextCLient(&homeworkFourServiceSendTokenToNextCLientServer{stream})
+}
+
+type HomeworkFourService_SendTokenToNextCLientServer interface {
+	SendAndClose(*TokenSendResponse) error
+	Recv() (*TokenSendRequest, error)
+	grpc.ServerStream
+}
+
+type homeworkFourServiceSendTokenToNextCLientServer struct {
+	grpc.ServerStream
+}
+
+func (x *homeworkFourServiceSendTokenToNextCLientServer) SendAndClose(m *TokenSendResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *homeworkFourServiceSendTokenToNextCLientServer) Recv() (*TokenSendRequest, error) {
+	m := new(TokenSendRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(HomeworkFourServiceServer).SendTokenToNextCLient(ctx, in)
+	return m, nil
+}
+
+func _HomeworkFourService_ReciveTokenFromPrevClient_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(HomeworkFourServiceServer).ReciveTokenFromPrevClient(&homeworkFourServiceReciveTokenFromPrevClientServer{stream})
+}
+
+type HomeworkFourService_ReciveTokenFromPrevClientServer interface {
+	SendAndClose(*TokenSendResponse) error
+	Recv() (*TokenSendRequest, error)
+	grpc.ServerStream
+}
+
+type homeworkFourServiceReciveTokenFromPrevClientServer struct {
+	grpc.ServerStream
+}
+
+func (x *homeworkFourServiceReciveTokenFromPrevClientServer) SendAndClose(m *TokenSendResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *homeworkFourServiceReciveTokenFromPrevClientServer) Recv() (*TokenSendRequest, error) {
+	m := new(TokenSendRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
 	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/HomeworkFourService/SendTokenToNextCLient",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HomeworkFourServiceServer).SendTokenToNextCLient(ctx, req.(*TokenSendRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // HomeworkFourService_ServiceDesc is the grpc.ServiceDesc for HomeworkFourService service.
@@ -90,12 +190,18 @@ func _HomeworkFourService_SendTokenToNextCLient_Handler(srv interface{}, ctx con
 var HomeworkFourService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "HomeworkFourService",
 	HandlerType: (*HomeworkFourServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "SendTokenToNextCLient",
-			Handler:    _HomeworkFourService_SendTokenToNextCLient_Handler,
+			StreamName:    "SendTokenToNextCLient",
+			Handler:       _HomeworkFourService_SendTokenToNextCLient_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "ReciveTokenFromPrevClient",
+			Handler:       _HomeworkFourService_ReciveTokenFromPrevClient_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "grpc/proto.proto",
 }

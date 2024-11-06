@@ -3,7 +3,6 @@ package main
 import (
 	proto "HW4/grpc"
 	"context"
-	"log"
 	"math/rand"
 	"sync"
 )
@@ -23,7 +22,8 @@ func main() {
 				activeNodes: make(map[string]proto.HomeworkFourServiceClient),
 				NodeID:      int32(i),
 				NextNodeID:  0,
-				port:        ":505" + string(i),
+				ownPort:     ":505" + string(i),
+				nextPort:    ":5050",
 			}
 			nodes[node.NodeID] = node
 		} else {
@@ -31,7 +31,8 @@ func main() {
 				activeNodes: make(map[string]proto.HomeworkFourServiceClient),
 				NodeID:      int32(i),
 				NextNodeID:  int32(i + 1),
-				port:        ":505" + string(i),
+				ownPort:     ":505" + string(i),
+				nextPort:    ":505" + string(i+1),
 			}
 			nodes[node.NodeID] = node
 		}
@@ -54,7 +55,8 @@ func (node *Node) runNode() error {
 		return err
 	}
 
-	if err := node.connectToNode(nodes[node.NextNodeID].port); err != nil {
+	// Connect to the next node
+	if err := node.connectToNode(nodes[node.NodeID].nextPort); err != nil {
 		return err
 	}
 
@@ -73,18 +75,15 @@ func (node *Node) runNode() error {
 
 		if requestingToken {
 			//Need to add some logic to request and handle the token
+			if node.hasToken {
+				node.useToken()
+				node.hasToken = false
+				nodes[node.NextNodeID].SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
+					Token: 1,
+				})
+
+			}
+
 		}
-
-		if node.hasToken {
-			log.Print("Node: %d has accessed and used the critical section", node.NodeID)
-			node.hasToken = false
-			nodes[node.NextNodeID].SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
-				Token: 1,
-			})
-
-		}
-
 	}
-
-	return nil
 }
