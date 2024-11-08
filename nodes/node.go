@@ -79,10 +79,14 @@ func main() {
 	var thisPort string
 	fmt.Scanln(&thisPort)
 
+	var targetPort string
+	fmt.Println("Insert target port here:")
+	fmt.Scanln(&targetPort)
+
 	var thisNode *Node
 
 	if thisPort == "5050" {
-		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":5050", nextPort: ":5051", hasToken: 1}
+		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":5050", nextPort: ":" + targetPort, hasToken: 1}
 
 		hasToken = 1
 
@@ -90,23 +94,18 @@ func main() {
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
 
-	}
+	} else {
+		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":" + thisPort, nextPort: ":" + targetPort, hasToken: 0}
 
-	if thisPort == "5051" {
-		thisNode = &Node{NodeID: 1, NextNodeID: 2, ownPort: ":5051", nextPort: ":5052", hasToken: 0}
-		log.Println("Node 1 created")
+		hasToken = 1
+
+		log.Println("Node 0 created")
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
-
 	}
 
-	if thisPort == "5052" {
-		thisNode = &Node{NodeID: 2, NextNodeID: 0, ownPort: ":5052", nextPort: ":5050", hasToken: 0}
-
-		log.Println("Node 2 created")
-		go thisNode.startNode()
-		thisNode.ConnectToNextNode()
-
+	if targetPort == "5050" {
+		thisNode.NextNodeID = 0
 	}
 
 	for {
