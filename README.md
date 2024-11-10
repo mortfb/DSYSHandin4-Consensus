@@ -5,6 +5,7 @@ When launching the next node, choose the previous node's target port, as the sta
 For the last node, to complete the ring, set the target port to 5050. Now the main program will start and the token will be passed around to every single node. 
 
 Example of a sequence:
+
 5050 -> 5051
 5051 -> 5221
 5221 -> 5050
