@@ -20,13 +20,10 @@ type Node struct {
 	NextNodeID int32
 	ownPort    string
 	nextPort   string
-	hasToken   int
 }
 
 var hasToken int = 0
 var requestToken bool = false
-
-//var nodes = []*Node{}
 
 func (node *Node) SendTokenToNextCLient(ctx context.Context, req *proto.TokenSendRequest) (*proto.TokenSendResponse, error) {
 	// Implement the method logic here
@@ -43,7 +40,7 @@ func (node *Node) SendTokenToNextCLient(ctx context.Context, req *proto.TokenSen
 func (node *Node) startNode() error { //maybe rename to StartServer for more clarity
 	listener, err := net.Listen("tcp", node.ownPort)
 
-	log.Printf("Node %d started", node.NodeID)
+	log.Printf("Node started")
 
 	if err != nil {
 		return err
@@ -61,7 +58,7 @@ func (node *Node) startNode() error { //maybe rename to StartServer for more cla
 }
 
 func (node *Node) ConnectToNextNode() {
-	log.Printf("Node %d is connecting to the next node", node.NodeID)
+	log.Printf("Node is connecting to the next node")
 
 	conn, err := grpc.Dial(node.nextPort, grpc.WithInsecure(), grpc.WithBlock())
 
@@ -71,10 +68,25 @@ func (node *Node) ConnectToNextNode() {
 	nextNode = proto.NewHomeworkFourServiceClient(conn)
 }
 
+func (node *Node) SendIDToNextClient(ctx context.Context, req *proto.IDSendRequest) (*proto.IDSendResponse, error) {
+	if node.nextPort != ":5050" {
+		node.NodeID = req.SenderID + 1
+		node.NextNodeID = req.SenderID + 2
+		return &proto.IDSendResponse{
+			Success: true,
+		}, nil
+	} else if node.nextPort == ":5050" {
+		node.NodeID = req.SenderID + 1
+		node.NextNodeID = 0
+	}
+
+	return &proto.IDSendResponse{
+		Success: true,
+	}, nil
+}
+
 func main() {
 	// Create the nodes
-
-	//maybe scan for ports, then make the nodes
 	fmt.Println("Insert port here:")
 	var thisPort string
 	fmt.Scanln(&thisPort)
@@ -86,22 +98,29 @@ func main() {
 	var thisNode *Node
 
 	if thisPort == "5050" {
-		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":5050", nextPort: ":" + targetPort, hasToken: 1}
+		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":5050", nextPort: ":" + targetPort}
 
 		hasToken = 1
 
-		log.Println("Node 0 created")
+		log.Println("Node created")
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
+		nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
+			SenderID: 0,
+		})
 
 	} else {
-		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":" + thisPort, nextPort: ":" + targetPort, hasToken: 0}
+		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":" + thisPort, nextPort: ":" + targetPort}
 
 		hasToken = 1
 
-		log.Println("Node 0 created")
+		log.Println("Node created")
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
+		nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
+			SenderID: thisNode.NodeID,
+		})
+		time.Sleep(1 * time.Second)
 	}
 
 	if targetPort == "5050" {
@@ -145,7 +164,6 @@ func main() {
 					log.Fatalf("Failed to send token to next node: %v", err)
 				}
 
-				//log.Printf("Node %d sends message to %d", thisNode.NodeID, thisNode.NextNodeID)
 				time.Sleep(2 * time.Second)
 			}
 		}

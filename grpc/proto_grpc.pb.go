@@ -19,6 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HomeworkFourServiceClient interface {
 	SendTokenToNextCLient(ctx context.Context, in *TokenSendRequest, opts ...grpc.CallOption) (*TokenSendResponse, error)
+	//rpc SendToken(TokenSend) returns (Empty){};
+	SendIDToNextClient(ctx context.Context, in *IDSendRequest, opts ...grpc.CallOption) (*IDSendResponse, error)
 }
 
 type homeworkFourServiceClient struct {
@@ -38,11 +40,22 @@ func (c *homeworkFourServiceClient) SendTokenToNextCLient(ctx context.Context, i
 	return out, nil
 }
 
+func (c *homeworkFourServiceClient) SendIDToNextClient(ctx context.Context, in *IDSendRequest, opts ...grpc.CallOption) (*IDSendResponse, error) {
+	out := new(IDSendResponse)
+	err := c.cc.Invoke(ctx, "/HomeworkFourService/SendIDToNextClient", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HomeworkFourServiceServer is the server API for HomeworkFourService service.
 // All implementations must embed UnimplementedHomeworkFourServiceServer
 // for forward compatibility
 type HomeworkFourServiceServer interface {
 	SendTokenToNextCLient(context.Context, *TokenSendRequest) (*TokenSendResponse, error)
+	//rpc SendToken(TokenSend) returns (Empty){};
+	SendIDToNextClient(context.Context, *IDSendRequest) (*IDSendResponse, error)
 	mustEmbedUnimplementedHomeworkFourServiceServer()
 }
 
@@ -52,6 +65,9 @@ type UnimplementedHomeworkFourServiceServer struct {
 
 func (UnimplementedHomeworkFourServiceServer) SendTokenToNextCLient(context.Context, *TokenSendRequest) (*TokenSendResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendTokenToNextCLient not implemented")
+}
+func (UnimplementedHomeworkFourServiceServer) SendIDToNextClient(context.Context, *IDSendRequest) (*IDSendResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendIDToNextClient not implemented")
 }
 func (UnimplementedHomeworkFourServiceServer) mustEmbedUnimplementedHomeworkFourServiceServer() {}
 
@@ -84,6 +100,24 @@ func _HomeworkFourService_SendTokenToNextCLient_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HomeworkFourService_SendIDToNextClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IDSendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HomeworkFourServiceServer).SendIDToNextClient(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/HomeworkFourService/SendIDToNextClient",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HomeworkFourServiceServer).SendIDToNextClient(ctx, req.(*IDSendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HomeworkFourService_ServiceDesc is the grpc.ServiceDesc for HomeworkFourService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -94,6 +128,10 @@ var HomeworkFourService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendTokenToNextCLient",
 			Handler:    _HomeworkFourService_SendTokenToNextCLient_Handler,
+		},
+		{
+			MethodName: "SendIDToNextClient",
+			Handler:    _HomeworkFourService_SendIDToNextClient_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

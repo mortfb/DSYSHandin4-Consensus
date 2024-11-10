@@ -6,6 +6,7 @@ option go_package = "DSYSHandin4-Consensus/grpc/proto";
 service HomeworkFourService{
     rpc SendTokenToNextCLient(TokenSendRequest) returns (TokenSendResponse){};
     //rpc SendToken(TokenSend) returns (Empty){};
+    rpc SendIDToNextClient(IDSendRequest) returns (IDSendResponse){};
 
     //maybe add a function to request a token from the previous node
     //rpc ReciveTokenFromPrevClient(stream TokenSendRequest) returns (TokenSendResponse){};
@@ -24,3 +25,11 @@ message TokenSendRequest{
     int32 token = 2;
     int32 senderID = 3;
 }
+
+message IDSendRequest{
+    int32 senderID = 1;
+}
+
+message IDSendResponse{
+    bool success = 1;
+};
