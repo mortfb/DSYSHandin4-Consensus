@@ -21,9 +21,8 @@ message TokenSendResponse{
 };
 
 message TokenSendRequest{
-    string message = 1; //maybe not relevant, keeping for debugging
-    int32 token = 2;
-    int32 senderID = 3;
+    int32 token = 1;
+    int32 senderID = 2;
 }
 
 message IDSendRequest{

@@ -154,7 +154,6 @@ func main() {
 					requestToken = false
 				}
 				_, err := nextNode.SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
-					Message:  "now you have the token",
 					Token:    1,
 					SenderID: thisNode.NodeID,
 				})
@@ -166,7 +165,6 @@ func main() {
 
 			} else {
 				_, err := nextNode.SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
-					Message:  "you dont have the token",
 					Token:    0,
 					SenderID: thisNode.NodeID,
 				})
