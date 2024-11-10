@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"net"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -69,15 +70,15 @@ func (node *Node) ConnectToNextNode() {
 }
 
 func (node *Node) SendIDToNextClient(ctx context.Context, req *proto.IDSendRequest) (*proto.IDSendResponse, error) {
-	if node.nextPort != ":5050" {
-		node.NodeID = req.SenderID + 1
-		node.NextNodeID = req.SenderID + 2
-		return &proto.IDSendResponse{
-			Success: true,
-		}, nil
+	if node.ownPort == ":5050" {
+		node.NodeID = 0
+		node.NextNodeID = 1
 	} else if node.nextPort == ":5050" {
 		node.NodeID = req.SenderID + 1
 		node.NextNodeID = 0
+	} else {
+		node.NodeID = req.SenderID + 1
+		node.NextNodeID = req.SenderID + 2
 	}
 
 	return &proto.IDSendResponse{
@@ -86,6 +87,7 @@ func (node *Node) SendIDToNextClient(ctx context.Context, req *proto.IDSendReque
 }
 
 func main() {
+	var WaitGroup sync.WaitGroup
 	// Create the nodes
 	fmt.Println("Insert port here:")
 	var thisPort string
@@ -105,9 +107,14 @@ func main() {
 		log.Println("Node created")
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
-		nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
-			SenderID: 0,
-		})
+
+		WaitGroup.Add(1)
+		go func() {
+			defer WaitGroup.Done()
+			nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
+				SenderID: 0,
+			})
+		}()
 
 	} else {
 		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":" + thisPort, nextPort: ":" + targetPort}
@@ -117,15 +124,18 @@ func main() {
 		log.Println("Node created")
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
-		nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
-			SenderID: thisNode.NodeID,
-		})
-		time.Sleep(1 * time.Second)
+
+		WaitGroup.Add(1)
+		go func() {
+			defer WaitGroup.Done()
+			nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
+				SenderID: thisNode.NodeID,
+			})
+		}()
 	}
 
-	if targetPort == "5050" {
-		thisNode.NextNodeID = 0
-	}
+	// Wait for the ID to be updated
+	WaitGroup.Wait()
 
 	for {
 		if !requestToken {
