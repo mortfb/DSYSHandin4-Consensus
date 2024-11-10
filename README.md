@@ -17,3 +17,6 @@ Or
 5057 -> 5058
 5058 -> 5059
 5059 -> 5050
+
+
+NOTE: at the current moment, the very last node in the ring, will say it is Node 0, until the first iteration of the loop has run, then it will correct itself to have the correct NodeID
