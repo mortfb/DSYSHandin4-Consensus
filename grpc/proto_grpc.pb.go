@@ -19,7 +19,6 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HomeworkFourServiceClient interface {
 	SendTokenToNextCLient(ctx context.Context, in *TokenSendRequest, opts ...grpc.CallOption) (*TokenSendResponse, error)
-	//rpc SendToken(TokenSend) returns (Empty){};
 	SendIDToNextClient(ctx context.Context, in *IDSendRequest, opts ...grpc.CallOption) (*IDSendResponse, error)
 }
 
@@ -54,7 +53,6 @@ func (c *homeworkFourServiceClient) SendIDToNextClient(ctx context.Context, in *
 // for forward compatibility
 type HomeworkFourServiceServer interface {
 	SendTokenToNextCLient(context.Context, *TokenSendRequest) (*TokenSendResponse, error)
-	//rpc SendToken(TokenSend) returns (Empty){};
 	SendIDToNextClient(context.Context, *IDSendRequest) (*IDSendResponse, error)
 	mustEmbedUnimplementedHomeworkFourServiceServer()
 }

@@ -109,6 +109,7 @@ func main() {
 		thisNode.ConnectToNextNode()
 
 		WaitGroup.Add(1)
+		//updates the ID of the next node
 		go func() {
 			defer WaitGroup.Done()
 			nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
@@ -125,6 +126,7 @@ func main() {
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
 
+		//updates the ID of the next node
 		WaitGroup.Add(1)
 		go func() {
 			defer WaitGroup.Done()
