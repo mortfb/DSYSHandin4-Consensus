@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand/v2"
 	"net"
-	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -25,20 +24,18 @@ type Node struct {
 
 var hasToken int = 0
 var requestToken bool = false
+var idUpdated bool = false
 
 func (node *Node) SendTokenToNextCLient(ctx context.Context, req *proto.TokenSendRequest) (*proto.TokenSendResponse, error) {
-	// Implement the method logic here
-
 	if req.Token == 1 {
 		hasToken = int(req.Token)
 	}
-
 	return &proto.TokenSendResponse{
 		Success: true,
 	}, nil
 }
 
-func (node *Node) startNode() error { //maybe rename to StartServer for more clarity
+func (node *Node) startNode() error {
 	listener, err := net.Listen("tcp", node.ownPort)
 
 	log.Printf("Node started")
@@ -47,14 +44,13 @@ func (node *Node) startNode() error { //maybe rename to StartServer for more cla
 		return err
 	}
 
-	grpcServer := grpc.NewServer() //maybe rename
+	grpcServer := grpc.NewServer()
 
 	proto.RegisterHomeworkFourServiceServer(grpcServer, node)
 
 	if err := grpcServer.Serve(listener); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -81,13 +77,14 @@ func (node *Node) SendIDToNextClient(ctx context.Context, req *proto.IDSendReque
 		node.NextNodeID = req.SenderID + 2
 	}
 
+	idUpdated = true
+
 	return &proto.IDSendResponse{
 		Success: true,
 	}, nil
 }
 
 func main() {
-	var WaitGroup sync.WaitGroup
 	// Create the nodes
 	fmt.Println("Insert port here:")
 	var thisPort string
@@ -108,15 +105,10 @@ func main() {
 		go thisNode.startNode()
 		thisNode.ConnectToNextNode()
 
-		WaitGroup.Add(1)
 		//updates the ID of the next node
-		go func() {
-			defer WaitGroup.Done()
-			nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
-				SenderID: 0,
-			})
-		}()
-
+		nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
+			SenderID: 0,
+		})
 	} else {
 		thisNode = &Node{NodeID: 0, NextNodeID: 1, ownPort: ":" + thisPort, nextPort: ":" + targetPort}
 
@@ -127,54 +119,47 @@ func main() {
 		thisNode.ConnectToNextNode()
 
 		//updates the ID of the next node
-		WaitGroup.Add(1)
-		go func() {
-			defer WaitGroup.Done()
-			nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
-				SenderID: thisNode.NodeID,
-			})
-		}()
+		nextNode.SendIDToNextClient(context.Background(), &proto.IDSendRequest{
+			SenderID: thisNode.NodeID,
+		})
 	}
 
-	// Wait for the ID to be updated
-	WaitGroup.Wait()
-
 	for {
-		if !requestToken {
-			var random = rand.IntN(4)
-			if random == 1 {
-				requestToken = true
-				log.Printf("Node %d is requesting the token", thisNode.NodeID)
+		if idUpdated || thisPort == "5050" {
+			if !requestToken {
+				var random = rand.IntN(4)
+				if random == 1 {
+					requestToken = true
+					log.Printf("Node %d is requesting the token", thisNode.NodeID)
+				}
 			}
-		}
-		if nextNode != nil {
-			if hasToken == 1 {
-				log.Printf("Node %d has the token", thisNode.NodeID)
-				if requestToken {
-					log.Printf("Node %d is using the toke to access the critical section", thisNode.NodeID)
+			if nextNode != nil {
+				if hasToken == 1 {
+					log.Printf("Node %d has the token", thisNode.NodeID)
+					if requestToken {
+						log.Printf("Node %d is using the toke to access the critical section", thisNode.NodeID)
+						time.Sleep(2 * time.Second)
+						requestToken = false
+					}
+					_, err := nextNode.SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
+						Token:    1,
+						SenderID: thisNode.NodeID,
+					})
+					hasToken = 0
+					if err != nil {
+						log.Fatalf("Failed to send token to next node: %v", err)
+					}
+					log.Printf("Node %d sends token to %d", thisNode.NodeID, thisNode.NextNodeID)
+				} else {
+					_, err := nextNode.SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
+						Token:    0,
+						SenderID: thisNode.NodeID,
+					})
+					if err != nil {
+						log.Fatalf("Failed to send token to next node: %v", err)
+					}
 					time.Sleep(2 * time.Second)
-					requestToken = false
 				}
-				_, err := nextNode.SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
-					Token:    1,
-					SenderID: thisNode.NodeID,
-				})
-				hasToken = 0
-				if err != nil {
-					log.Fatalf("Failed to send token to next node: %v", err)
-				}
-				log.Printf("Node %d sends token to %d", thisNode.NodeID, thisNode.NextNodeID)
-
-			} else {
-				_, err := nextNode.SendTokenToNextCLient(context.Background(), &proto.TokenSendRequest{
-					Token:    0,
-					SenderID: thisNode.NodeID,
-				})
-				if err != nil {
-					log.Fatalf("Failed to send token to next node: %v", err)
-				}
-
-				time.Sleep(2 * time.Second)
 			}
 		}
 	}
